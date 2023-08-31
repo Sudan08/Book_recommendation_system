@@ -4,12 +4,8 @@
     <meta charset="UTF-8">
     <title>Book Recommender System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/bootstrap.min.css') }}">
-    <script
-  src="https://code.jquery.com/jquery-3.7.0.js"
-  integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM="
-  crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
     <!-- Latest compiled and minified CSS -->
@@ -94,6 +90,7 @@
             color: #888;
             font-size: 14px;
         }
+
     </style>
 </head>
 <body>
@@ -125,7 +122,7 @@
                             <p class="card-info"><span class="text-muted">Votes:</span> {{ votes[i] }} | <span class="text-muted">Rating:</span> {{ rating[i] }}</p>
                         </div>
                         <div class="flex justify-center">
-                        <button class="btn btn-dark mx-2 w-2/3" data-toggle="modal" data-target="#exampleModal" value="{{ book_name[i] }}" id="viewMore">View More</button>
+                        <button  class="btn btn-dark mx-2 w-2/3 viewMore" data-toggle="modal" data-target="#exampleModal" value="{{ book_name[i] }}" >View More</button>
                         </div>
                     </div>
                     {% endfor %}
@@ -139,13 +136,15 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel"></h5>
+          <h5 class="modal-title text-3xl" id="exampleModalLabel"></h5>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
         <div class="modal-body">
-          
+          <div id="author" class="text-xl my-4"></div>
+          <div id="loading" class="flex justify-center items-center text-xl text-center w-full h-64"><p class="">Loading</p></div>
+          <div id="description"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -156,12 +155,44 @@
 
 
 </body>
-<script type="text/javascript">
-    $('#viewMore').on('click',function() {
-        var book_name = $('#viewMore').val();
+<script type="text/javascript" defer>
+    var apiKey = 'AIzaSyB2MXJr4rxPQyefquR6KCDGobET7rjBPSQ';
+    $('.viewMore').click(function() {
+        $('body').css({overflow: 'hidden'});
+        var book_name = this.value;
         var book_author = $(this).closest('.card').find('.card-author').text();
         $('.modal-title').html(book_name);
-        $('.modal-body').html('Author: ' + book_author);
+        $('#author').html('Author: ' + book_author);
+        var apiUrl = "https://www.googleapis.com/books/v1/volumes?q=" + encodeURIComponent(book_name) + "&key=" + apiKey;
+
+        $.ajax({
+                    url: apiUrl,
+                    type: "GET",
+                    dataType: "json",
+                    beforeSend : function(){
+                        $("#loading").show();
+                    },
+                    complete : function () {
+                        $("#loading").hide();
+                    },
+                    success: function(data) {
+                        if (data.totalItems > 0) {
+                            var description = data.items[0].volumeInfo.description || "Description not available.";
+                            $("#description").text(description);
+                        } else {
+                            $("#description").text("No books found with that title.");
+                        }
+                    },
+                    error: function() {
+                        $("#description").text("An error occurred while fetching data.");
+                    }
+                });
     });
+    $('#exampleModal').on('hidden.bs.modal', function () {
+        $('body').css({overflow: 'auto'});
+        $('.modal-title').html('');
+        $('#author').html('');
+        $("#description").html('');
+    })
 </script>
 </html>
